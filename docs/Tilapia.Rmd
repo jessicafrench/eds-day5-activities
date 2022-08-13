@@ -18,6 +18,7 @@ library(janitor)
 ```{r}
 us_tilapia_imports <- read_csv(here::here("data", "us_tilapia_imports.csv"))
 ```
+
 ```{r}
 summary(us_tilapia_imports)
 dim(us_tilapia_imports)
@@ -25,24 +26,50 @@ skimr::skim(us_tilapia_imports)
 ```
 
 ```{r}
-us_tilapia_imports_long <- pivot_longer(data = us_tilapia_imports, 
-                                        !country, 
+us_tilapia_imports_long <-  us_tilapia_imports |> pivot_longer(
+                                        cols = -country, 
                                         names_to = "year", 
-                                        values_to = "export_vol")
+                                        values_to = "export_vol") |> 
+mutate(year = as.numeric(year))
+```
 
-us_tilapia_imports_long <- us_tilapia_imports_long |> 
-  mutate(year = as.numeric(year)) |> 
-  group_by(year) |> 
+
+```{r}
+tilapia_tot <- us_tilapia_imports_long |> 
+  group_by(year) |>   
   summarize(total_vol = sum(export_vol, na.rm = TRUE))
 ```
 
+
 ```{r}
-class(us_tilapia_imports_long$year)
+plot <- ggplot(data = tilapia_tot, 
+               aes(x = year,
+                   y = total_vol)) +
+  geom_line() +
+  labs(x = "year",
+       y = "Total import volume in thousands of pounds")
+
+plot
+
+ggsave(here::here("figs", "tilapia_import_plot.png"))
+```
+
+
+```{r}
+tilapia_export_countries <- us_tilapia_imports_long |> 
+  filter(country %in% c("Ecuador", "Honduras", "Costa Rica", "Mexico")) 
+  
 ```
 
 ```{r}
-yearly_tilapia_tot <- dplyr::group_by(.data = us_tilapia_imports_long,
-                                       year) 
-summary <- summarize(.data = us_tilapia_imports_long, total_vol = sum(export_vol), na.rm = TRUE)
+plot_country <- ggplot(data = tilapia_export_countries, 
+                       aes(x = year, 
+                           y = export_vol)) +
+  geom_line(aes(color = country)) 
+  #facet_wrap(~country)
+
+plot_country
+
+ggsave(here::here("figs", "import_plot_country.png"))
 ```
 
